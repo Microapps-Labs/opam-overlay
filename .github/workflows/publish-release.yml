@@ -1,0 +1,64 @@
+name: Publish tagged opam release
+
+on:
+  repository_dispatch:
+    types: [publish-opam-release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-${{ github.event.client_payload.source }}-${{ github.event.client_payload.tag }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ocaml/setup-ocaml@v3
+      - name: Validate and resolve tagged source
+        id: source
+        env:
+          SOURCE: ${{ github.event.client_payload.source }}
+          TAG: ${{ github.event.client_payload.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          jq -e --arg source "$SOURCE" 'has($source)' release-manifest.json >/dev/null
+          [[ "$TAG" =~ ^v[0-9][0-9A-Za-z.+~_-]*$ ]]
+          COMMIT="$(git ls-remote "https://github.com/${SOURCE}.git" "refs/tags/${TAG}^{}" | awk 'NR == 1 { print $1 }')"
+          if [ -z "$COMMIT" ]; then
+            COMMIT="$(git ls-remote "https://github.com/${SOURCE}.git" "refs/tags/${TAG}" | awk 'NR == 1 { print $1 }')"
+          fi
+          test -n "$COMMIT"
+          printf 'commit=%s\n' "$COMMIT" >> "$GITHUB_OUTPUT"
+      - name: Download immutable source archive
+        env:
+          SOURCE: ${{ github.event.client_payload.source }}
+          COMMIT: ${{ steps.source.outputs.commit }}
+        run: curl --fail --location --retry 3 --output source.tar.gz "https://github.com/${SOURCE}/archive/${COMMIT}.tar.gz"
+      - name: Generate and validate package definitions
+        env:
+          SOURCE: ${{ github.event.client_payload.source }}
+          TAG: ${{ github.event.client_payload.tag }}
+          COMMIT: ${{ steps.source.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/publish_release.py --source "$SOURCE" --tag "$TAG" --commit "$COMMIT" --archive source.tar.gz
+          while IFS= read -r opam_file; do opam lint "$opam_file"; done < <(find packages -name opam -newer source.tar.gz -print)
+      - name: Commit published definitions
+        env:
+          SOURCE: ${{ github.event.client_payload.source }}
+          TAG: ${{ github.event.client_payload.tag }}
+          COMMIT: ${{ steps.source.outputs.commit }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "opam-overlay[bot]"
+          git config user.email "opam-overlay[bot]@users.noreply.github.com"
+          git add packages
+          git commit -m "Publish ${SOURCE} ${TAG} (${COMMIT})"
+          git push

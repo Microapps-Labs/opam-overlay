@@ -1,0 +1,14 @@
+{
+  "OlegHQ/bson": ["bson"],
+  "OlegHQ/dream-cohttp-eio": ["dream", "dream-httpaf", "dream-mirage", "dream-pure"],
+  "OlegHQ/dream-validate": ["dream-validate"],
+  "OlegHQ/ent-ocaml": ["ent-ocaml", "ent-ocaml-mongo", "ent-ocaml-ppx"],
+  "nexo-tech/flo": ["flo", "ppx_flo"],
+  "OlegHQ/mongo-eio": ["mongo"],
+  "OlegHQ/oauth2-eio": ["oauth2-eio"],
+  "OlegHQ/paddle-eio": ["paddle-eio"],
+  "OlegHQ/resend-eio": ["resend-eio"],
+  "OlegHQ/tw-mini": ["tw"],
+  "OlegHQ/vault-eio": ["vault-eio"],
+  "OlegHQ/workflow-runtime": ["workflow-runtime"]
+}
