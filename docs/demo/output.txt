@@ -1,0 +1,12 @@
+Local release-generator fixture, no publication
+
+Synthetic version: v0.0.0-demo
+Input: recorded resend-eio source metadata
+
+packages/resend-eio/resend-eio.0.0.0-demo
+
+Generated definition lint:
+/tmp/tmp.bVuMf3WdhC/packages/resend-eio/resend-eio.0.0.0-demo/opam: Warnings.
+           warning 37: Missing field 'dev-repo'
+
+No source tag, release, dispatch or remote write occurred.
